@@ -33,6 +33,8 @@ jobs:
         with:
           context: .
           push: false
+          build-args: GIT_SHA=${{ github.sha }}
+          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
       - name: Normalize image reference
         if: github.event_name == 'push'
         run: echo "IMAGE_REF=ghcr.io/${GITHUB_REPOSITORY,,}:${GITHUB_SHA}" >> "$GITHUB_ENV"
@@ -50,3 +52,5 @@ jobs:
           context: .
           push: true
           tags: ${{ env.IMAGE_REF }}
+          build-args: GIT_SHA=${{ github.sha }}
+          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}

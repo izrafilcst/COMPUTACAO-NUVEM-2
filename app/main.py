@@ -25,7 +25,7 @@ def create_app(test_config=None):
 
     @app.get("/")
     def index():
-        return jsonify(service="cloud-tasks-api", message="API de tarefas em nuvem", endpoints=["/health", "/tasks"])
+        return jsonify(service="cloud-tasks-api", message="API de tarefas em nuvem", endpoints=["/health", "/tasks", "/version"])
 
     @app.get("/health")
     def health():
@@ -35,6 +35,10 @@ def create_app(test_config=None):
             return jsonify(status="ok"), 200
         except sqlite3.Error:
             return jsonify(status="error"), 503
+
+    @app.get("/version")
+    def version():
+        return jsonify(version=os.environ.get("APP_VERSION", "dev"))
 
     @app.get("/tasks")
     def list_tasks():

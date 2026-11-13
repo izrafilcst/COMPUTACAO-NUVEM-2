@@ -37,3 +37,15 @@ def test_mark_done(client):
 
 def test_not_found(client):
     assert client.patch("/tasks/999", json={"done": True}).status_code == 404
+
+
+def test_version_default(client, monkeypatch):
+    monkeypatch.delenv("APP_VERSION", raising=False)
+    result = client.get("/version")
+    assert result.status_code == 200
+    assert result.json == {"version": "dev"}
+
+
+def test_version_from_env(client, monkeypatch):
+    monkeypatch.setenv("APP_VERSION", "abc123")
+    assert client.get("/version").json == {"version": "abc123"}
