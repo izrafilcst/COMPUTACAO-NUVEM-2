@@ -5,6 +5,8 @@ RUN groupadd --system appuser && useradd --system --gid appuser appuser && mkdir
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY app/ ./app/
+ARG GIT_SHA=dev
+ENV APP_VERSION=$GIT_SHA
 USER appuser
 EXPOSE 8000
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "app.wsgi:app"]

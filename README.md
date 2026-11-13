@@ -23,6 +23,7 @@ Ou execute `docker compose up --build` e abra `http://localhost:8080/health`.
 | GET | `/tasks` | Lista tarefas |
 | POST | `/tasks` | Cria tarefa (`{"title":"..."}`) |
 | PATCH | `/tasks/<id>` | Atualiza conclusão (`{"done":true}`) |
+| GET | `/version` | Versão implantada (SHA do commit; `dev` fora do Docker de CI) |
 
 Exemplos:
 ```bash
