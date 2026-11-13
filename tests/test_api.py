@@ -49,3 +49,25 @@ def test_version_default(client, monkeypatch):
 def test_version_from_env(client, monkeypatch):
     monkeypatch.setenv("APP_VERSION", "abc123")
     assert client.get("/version").json == {"version": "abc123"}
+
+
+def test_delete_task(client):
+    keep = client.post("/tasks", json={"title": "Manter"}).json
+    gone = client.post("/tasks", json={"title": "Apagar"}).json
+    result = client.delete(f'/tasks/{gone["id"]}')
+    assert result.status_code == 204
+    assert result.data == b""
+    assert [t["id"] for t in client.get("/tasks").json] == [keep["id"]]
+
+
+def test_delete_not_found(client):
+    result = client.delete("/tasks/999")
+    assert result.status_code == 404
+    assert result.json["error"] == "tarefa nao encontrada"
+
+
+def test_delete_twice_and_bad_id(client):
+    item = client.post("/tasks", json={"title": "x"}).json
+    assert client.delete(f'/tasks/{item["id"]}').status_code == 204
+    assert client.delete(f'/tasks/{item["id"]}').status_code == 404
+    assert client.delete("/tasks/abc").status_code == 404
