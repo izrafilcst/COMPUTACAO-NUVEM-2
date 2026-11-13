@@ -1,0 +1,43 @@
+name: CD - deploy EC2
+on:
+  workflow_run:
+    workflows: ["CI - tests and image"]
+    types: [completed]
+    branches: [main]
+permissions:
+  contents: read
+  packages: read
+# Um deploy por vez: merges seguidos entram na fila em vez de se sobrepor.
+concurrency:
+  group: deploy-ec2
+  cancel-in-progress: false
+jobs:
+  deploy:
+    # Apenas CIs bem-sucedidas disparadas por push na main.
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' }}
+    # Runner self-hosted instalado na EC2: conexao de saida para o GitHub, sem SSH de entrada.
+    runs-on: [self-hosted, linux, x64, ec2-prod]
+    environment: production
+    env:
+      # Commit aprovado pela CI (nunca github.sha, que no workflow_run e o ultimo commit da main).
+      SHA: ${{ github.event.workflow_run.head_sha }}
+      ACTOR: ${{ github.actor }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SHA }}
+      - name: Login no GHCR (token efemero do job)
+        run: echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
+      - name: Deploy da imagem imutavel (SHA do commit aprovado)
+        run: bash scripts/deploy.sh "ghcr.io/${GITHUB_REPOSITORY,,}:${SHA}"
+      - name: Verificar /health e /version
+        run: |
+          curl --fail --show-error --silent --retry 10 --retry-delay 3 --retry-connrefused http://127.0.0.1/health
+          echo
+          VERSION=$(curl --fail --show-error --silent http://127.0.0.1/version)
+          echo "versao em execucao: $VERSION"
+          [[ "$VERSION" == *"$SHA"* ]]
+      - name: Logout do GHCR
+        if: always()
+        run: docker logout ghcr.io
