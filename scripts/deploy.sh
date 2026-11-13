@@ -10,6 +10,7 @@ docker rm -f cloud-tasks-api >/dev/null 2>&1 || true
 docker run -d --name cloud-tasks-api --restart unless-stopped   -p 80:8000 -v cloud-tasks-data:/data   -e DB_PATH=/data/tasks.db "$IMAGE"
 for i in $(seq 1 20); do
   if curl --fail --silent http://127.0.0.1/health >/dev/null; then
+    docker image prune -af --filter "until=24h" >/dev/null || true
     echo "Deploy succeeded: $IMAGE"
     exit 0
   fi

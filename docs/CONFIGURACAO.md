@@ -11,13 +11,13 @@
 3. Conecte com SSH e execute `bash scripts/setup-ec2-ubuntu.sh` (copie o script ou clone o repositório na instância). Faça logout/login e teste `docker ps` sem sudo.
 4. Certifique-se que a porta 80 está livre. Execute deploy manual primeiro, se necessário.
 
-## 3. GitHub
-Em Settings > Secrets and variables > Actions configure:
-- Secret `EC2_HOST`: IPv4 público ou DNS público da EC2, sem protocolo.
-- Secret `EC2_SSH_KEY`: conteúdo integral da **chave privada SSH** autorizada na instância; nunca versionar.
-- Secret `EC2_KNOWN_HOSTS`: entrada SSH do host, validada contra a fingerprint confiável da instância (não confiar cegamente em ssh-keyscan).
-- Variable `EC2_USER`: `ubuntu` para a AMI Ubuntu sugerida.
-Crie environment `production` para aprovações (se disponível).
+## 3. GitHub: runner self-hosted (sem secrets de SSH)
+O CD roda em um **runner self-hosted instalado na própria EC2**, que se conecta de dentro para o GitHub. Por isso não há SSH de entrada para o deploy, nem secrets `EC2_HOST`, `EC2_SSH_KEY`, `EC2_KNOWN_HOSTS` ou variável `EC2_USER`. O SSH (porta 22) fica só para administração, liberado apenas para o IP do aluno.
+1. Settings > Actions > Runners > New self-hosted runner > Linux x64; execute na EC2 os comandos mostrados na tela (o token é temporário e não deve ser compartilhado).
+2. No `./config.sh`, use o nome `ec2-prod` e o label extra `ec2-prod`.
+3. Instale como serviço: `sudo ./svc.sh install && sudo ./svc.sh start`.
+4. Como o repositório é público, em Settings > Actions > General exija aprovação para workflows de **todos** os colaboradores externos e nunca aprove a execução de workflow vindo de fork: ele poderia tentar usar o runner.
+O environment `production` é criado automaticamente na primeira execução do CD.
 
 ## 4. Registry GHCR
 A CI publica imagem `ghcr.io/OWNER/REPO:COMMIT_SHA` após `push` na main. Para simplificar o laboratório, nas configurações do pacote GitHub mude a visibilidade da imagem para **Public**, de modo que EC2 execute `docker pull` sem credenciais persistentes. Não publique dados sensíveis na imagem.
