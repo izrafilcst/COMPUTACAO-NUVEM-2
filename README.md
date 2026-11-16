@@ -1,11 +1,39 @@
-# Cloud Tasks API — Projeto Final de Computação em Nuvem
+# Cloud Tasks API: esteira CI/CD na AWS
 
-Aplicação Flask/SQLite preparada para um laboratório de **CI/CD com GitHub Actions, Docker, GHCR e AWS EC2**. A base contém código, testes e workflows; cabe ao grupo aprovisionar a nuvem, configurar segredos, usar branches/PRs, implementar uma evolução funcional e comprovar a esteira.
+API de tarefas (Flask e SQLite) com esteira completa de **CI/CD: GitHub Actions, imagem Docker versionada por SHA no GHCR e deploy automático em uma EC2 da AWS** por runner self-hosted. Projeto final da disciplina de Computação em Nuvem.
+
+## Integrantes
+
+| Nome | RA |
+|---|---|
+| Rafael Alves de Sousa Costa | 22304563 |
+| João Bernardo | 22300693 |
+
+A dupla trabalhou em conjunto em todas as etapas. Detalhes na seção 11 do [relatório](docs/RELATORIO.md).
+
+## Entrega
+
+| Item | Link |
+|---|---|
+| Repositório | https://github.com/izrafilcst/COMPUTACAO-NUVEM-2 |
+| API (IP público antes da parada) | `http://18.215.161.161/health` |
+| Relatório (diagrama, infraestrutura, custos, persistência) | [docs/RELATORIO.md](docs/RELATORIO.md) |
+| Evidências (prints) | [docs/evidencias/](docs/evidencias/) |
+| Pull Requests | [#1](https://github.com/izrafilcst/COMPUTACAO-NUVEM-2/pull/1), [#2](https://github.com/izrafilcst/COMPUTACAO-NUVEM-2/pull/2), [#3](https://github.com/izrafilcst/COMPUTACAO-NUVEM-2/pull/3), [#4](https://github.com/izrafilcst/COMPUTACAO-NUVEM-2/pull/4) |
+| CI aprovada em PR (DELETE) | [run 43430486134](https://github.com/izrafilcst/COMPUTACAO-NUVEM-2/actions/runs/43430486134) |
+| CI aprovada no push da `main` | [run 43463371980](https://github.com/izrafilcst/COMPUTACAO-NUVEM-2/actions/runs/43463371980) |
+| CD aprovado | [run 43463546742](https://github.com/izrafilcst/COMPUTACAO-NUVEM-2/actions/runs/43463546742) |
+
+**Sobre o IP.** A API roda numa EC2 do AWS Academy Learner Lab. O timer da sessão termina por volta das **22:50 de 15/11/2026** (horário de Brasília). Nesse momento a EC2 é parada e, ao reiniciar a sessão, o IP público muda. O IP acima vale até a parada; o IP vigente na avaliação é informado no Moodle.
 
 ## Arquitetura
-`Branch/PR -> CI (pytest + Docker build) -> merge main -> CI (publicação GHCR por SHA) -> CD (runner self-hosted na EC2 + docker pull/run) -> /health`
+
+![Arquitetura da esteira](docs/diagrama-arquitetura.svg)
+
+`Branch/PR -> CI (pytest + Docker build) -> merge na main -> CI (publica imagem no GHCR com tag = SHA) -> CD (runner self-hosted na EC2: docker pull + run) -> /health e /version`
 
 ## Rodar localmente
+
 ```bash
 python -m venv .venv
 # Linux/macOS: source .venv/bin/activate  |  Windows: .venv\Scripts\activate
@@ -13,35 +41,44 @@ pip install -r requirements-dev.txt
 python -m pytest -q
 python -m flask --app app.main run --port 5000
 ```
+
 Ou execute `docker compose up --build` e abra `http://localhost:8080/health`.
 
 ## API
+
 | Método | Rota | Função |
 |---|---|---|
 | GET | `/` | Informações |
-| GET | `/health` | Saúde da aplicação/banco |
+| GET | `/health` | Saúde da aplicação e do banco |
 | GET | `/tasks` | Lista tarefas |
 | POST | `/tasks` | Cria tarefa (`{"title":"..."}`) |
 | PATCH | `/tasks/<id>` | Atualiza conclusão (`{"done":true}`) |
 | DELETE | `/tasks/<id>` | Exclui a tarefa (204 sem corpo; 404 se não existir) |
 | GET | `/version` | Versão implantada (SHA do commit; `dev` fora do Docker de CI) |
 
-Exemplos:
+Exemplos (troque `HOST` por `localhost:8080` ou pelo IP da EC2):
+
 ```bash
-curl http://localhost:8080/health
-curl -X POST http://localhost:8080/tasks -H 'Content-Type: application/json' -d '{"title":"Minha tarefa"}'
-curl http://localhost:8080/tasks
+curl http://HOST/health
+curl -X POST http://HOST/tasks -H 'Content-Type: application/json' -d '{"title":"Minha tarefa"}'
+curl http://HOST/tasks
+curl -X DELETE http://HOST/tasks/1
+curl http://HOST/version
 ```
 
-## Configuração AWS + GitHub
-Leia [docs/CONFIGURACAO.md](docs/CONFIGURACAO.md).
+## Como a esteira funciona
 
-## Seu desafio
-1. Criar repositório próprio e configurar CI e CD reais na EC2.
-2. Implementar `DELETE /tasks/<id>` (204 quando excluída, 404 caso contrário) e **dois testes automatizados** associados.
-3. Adicionar **uma melhoria adicional**: filtro de tarefas por situação, rota `/version`, ou outra funcionalidade acordada com docente; incluir teste.
-4. Demonstrar ao menos um PR com CI aprovado e um `push` na main que resulte em deploy, além de prova de persistência após reiniciar contêiner.
-5. Preencher relatório com diagrama, decisões, evidências e custos/encerramento.
+- **CI** (`.github/workflows/ci.yml`): em PR e em push na `main`, instala dependências, roda `pytest` (10 testes) e faz o build Docker. Só o push na `main` publica a imagem `ghcr.io/izrafilcst/computacao-nuvem-2:<SHA>`; PR nunca publica nem faz deploy.
+- **CD** (`.github/workflows/cd.yml`): dispara depois da CI com sucesso na `main`, no runner `ec2-prod` instalado na própria EC2. Implanta a imagem do commit aprovado com `scripts/deploy.sh`, mantém os dados no volume `cloud-tasks-data` e verifica `/health` e `/version`.
+- **Persistência**: o SQLite fica em `/data/tasks.db`, dentro do volume do Docker, e sobrevive à recriação do container (prova no relatório, seção 7).
+
+## Configuração e operação
+
+- Configuração da AWS e do GitHub: [docs/CONFIGURACAO.md](docs/CONFIGURACAO.md).
+- Passo a passo executado na AWS, com os prints exigidos: [docs/GUIA_AWS_ALUNO.md](docs/GUIA_AWS_ALUNO.md).
 
 ## Segurança e limitações didáticas
-O deploy é simplificado: não há TLS, balanceamento, rollback automatizado nem alta disponibilidade. Não colocar dados reais na API e não usar este modelo sem endurecimento em produção. SSH a partir de runner hospedado exige planejamento de rede seguro; veja o guia. `docker` group equivale a privilégios elevados na EC2.
+
+- Nenhuma chave, token ou segredo no repositório. O CD usa apenas o `GITHUB_TOKEN` efêmero do job.
+- SSH (porta 22) restrito ao IP do aluno; o deploy não usa SSH de entrada porque o runner se conecta de dentro para o GitHub.
+- O deploy é simplificado: sem TLS, balanceamento, rollback automatizado ou alta disponibilidade. Não coloque dados reais na API. O usuário do runner está no grupo `docker`, o que equivale a privilégio elevado na EC2; por isso a `main` é protegida e workflows de colaboradores externos exigem aprovação.

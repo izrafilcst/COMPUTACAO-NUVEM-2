@@ -1,0 +1,158 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 690" width="960" height="690" font-family="DejaVu Sans, Arial, sans-serif" role="img" aria-labelledby="t d">
+  <title id="t">Arquitetura da esteira CI/CD: GitHub Actions, GHCR e EC2 com runner self-hosted</title>
+  <desc id="d">Cadeia de 7 etapas: branch e PR, CI do PR, merge na main, CI publica imagem por SHA no GHCR, CD no runner ec2-prod, docker pull e run na EC2 com volume, verificacao por HTTP.</desc>
+  <defs>
+    <marker id="seta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f3a5f"/>
+    </marker>
+    <marker id="setaCinza" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#6b7280"/>
+    </marker>
+    <style>
+      .t { font-size: 12.5px; fill: #111827; }
+      .tb { font-size: 12.5px; fill: #111827; font-weight: 700; }
+      .ts { font-size: 11px; fill: #374151; }
+      .tf { font-size: 13px; fill: #1f3a5f; font-weight: 700; }
+      .caixa { fill: #ffffff; stroke: #1f3a5f; stroke-width: 1.5; }
+      .moldura { fill: #f3f6fb; stroke: #9fb3cf; stroke-width: 1.5; stroke-dasharray: 6 4; }
+      .ec2 { fill: #fff8ec; stroke: #b7791f; stroke-width: 1.5; }
+      .volume { fill: #eefaf0; stroke: #2f855a; stroke-width: 1.5; }
+      .linha { stroke: #1f3a5f; stroke-width: 1.8; fill: none; marker-end: url(#seta); }
+      .cinza { stroke: #6b7280; stroke-width: 1.5; fill: none; stroke-dasharray: 5 3; marker-end: url(#setaCinza); }
+      .num { fill: #1f3a5f; }
+      .numt { fill: #ffffff; font-size: 11px; font-weight: 700; text-anchor: middle; }
+    </style>
+  </defs>
+
+  <rect width="960" height="690" fill="#ffffff"/>
+  <text x="20" y="28" class="tf" style="font-size:16px">Esteira CI/CD: GitHub Actions, GHCR e EC2 (runner self-hosted)</text>
+
+  <!-- GitHub -->
+  <rect x="15" y="45" width="930" height="170" rx="10" class="moldura"/>
+  <text x="28" y="65" class="tf">GitHub: repositório público izrafilcst/COMPUTACAO-NUVEM-2</text>
+
+  <rect x="30" y="85" width="160" height="95" rx="6" class="caixa"/>
+  <text x="40" y="105" class="tb">Branch + Pull Request</text>
+  <text x="40" y="124" class="ts">branch feature/...</text>
+  <text x="40" y="140" class="ts">revisão própria no PR</text>
+  <text x="40" y="156" class="ts">equipe: Rafael e João</text>
+
+  <rect x="212" y="85" width="170" height="95" rx="6" class="caixa"/>
+  <text x="222" y="105" class="tb">CI no PR</text>
+  <text x="222" y="124" class="ts">instala dependências</text>
+  <text x="222" y="140" class="ts">pytest (10 testes)</text>
+  <text x="222" y="156" class="ts">docker build, sem publicar</text>
+
+  <rect x="404" y="85" width="150" height="95" rx="6" class="caixa"/>
+  <text x="414" y="105" class="tb">Merge na main</text>
+  <text x="414" y="124" class="ts">main protegida</text>
+  <text x="414" y="140" class="ts">checks test e image</text>
+  <text x="414" y="156" class="ts">obrigatórios</text>
+
+  <rect x="576" y="85" width="170" height="95" rx="6" class="caixa"/>
+  <text x="586" y="105" class="tb">CI no push da main</text>
+  <text x="586" y="124" class="ts">pytest + docker build</text>
+  <text x="586" y="140" class="ts">publica no GHCR a</text>
+  <text x="586" y="156" class="ts">imagem com tag = SHA</text>
+
+  <rect x="768" y="85" width="162" height="95" rx="6" class="caixa"/>
+  <text x="778" y="105" class="tb">CD (workflow_run)</text>
+  <text x="778" y="124" class="ts">só se a CI = success</text>
+  <text x="778" y="140" class="ts">runs-on: self-hosted,</text>
+  <text x="778" y="156" class="ts">linux, x64, ec2-prod</text>
+
+  <path d="M190,132 L210,132" class="linha"/>
+  <path d="M382,132 L402,132" class="linha"/>
+  <path d="M554,132 L574,132" class="linha"/>
+  <path d="M746,132 L766,132" class="linha"/>
+
+  <!-- numeros da cadeia -->
+  <g>
+    <circle cx="200" cy="120" r="10" class="num"/><text x="200" y="124" class="numt">1</text>
+    <circle cx="392" cy="120" r="10" class="num"/><text x="392" y="124" class="numt">2</text>
+    <circle cx="564" cy="120" r="10" class="num"/><text x="564" y="124" class="numt">3</text>
+    <circle cx="756" cy="120" r="10" class="num"/><text x="756" y="124" class="numt">4</text>
+  </g>
+
+  <!-- GHCR -->
+  <rect x="560" y="228" width="200" height="46" rx="6" class="caixa"/>
+  <text x="570" y="247" class="tb">GHCR (registry)</text>
+  <text x="570" y="263" class="ts">ghcr.io/izrafilcst/computacao-nuvem-2:SHA</text>
+  <path d="M661,180 L661,226" class="linha"/>
+  <text x="669" y="205" class="ts">publica :SHA</text>
+
+  <!-- AWS -->
+  <rect x="15" y="290" width="930" height="335" rx="10" class="moldura"/>
+  <text x="28" y="310" class="tf">AWS Learner Lab, us-east-1, VPC padrão, Security Group cloud-tasks-sg</text>
+
+  <!-- clientes e admin -->
+  <rect x="30" y="345" width="170" height="100" rx="6" class="caixa"/>
+  <text x="40" y="365" class="tb">Clientes / professor</text>
+  <text x="40" y="383" class="ts">navegador ou curl</text>
+  <text x="40" y="399" class="ts">http://18.215.161.161</text>
+  <text x="40" y="415" class="ts">/health  /version  /tasks</text>
+  <text x="40" y="433" class="ts" style="font-weight:700">porta 80/TCP (HTTP)</text>
+
+  <rect x="30" y="480" width="170" height="110" rx="6" class="caixa"/>
+  <text x="40" y="500" class="tb">Administrador</text>
+  <text x="40" y="518" class="ts">Rafael, do próprio PC</text>
+  <text x="40" y="534" class="ts">SSH com a chave cn2-key</text>
+  <text x="40" y="552" class="ts" style="font-weight:700">porta 22/TCP: só do IP</text>
+  <text x="40" y="566" class="ts" style="font-weight:700">do aluno (/32)</text>
+
+  <!-- EC2 -->
+  <rect x="245" y="335" width="685" height="270" rx="8" class="ec2"/>
+  <text x="257" y="355" class="tb">EC2 cloud-tasks-ec2: t3.micro, Ubuntu 24.04, 16 GiB gp3, IP público (sem Elastic IP)</text>
+
+  <!-- Docker -->
+  <rect x="262" y="375" width="340" height="215" rx="6" class="caixa"/>
+  <text x="272" y="394" class="tb">Docker</text>
+  <rect x="280" y="406" width="304" height="76" rx="6" class="caixa"/>
+  <text x="290" y="426" class="tb">container cloud-tasks-api</text>
+  <text x="290" y="444" class="ts">gunicorn na porta 8000 (usuário appuser)</text>
+  <text x="290" y="460" class="ts">publica 0.0.0.0:80 para 8000</text>
+  <text x="290" y="474" class="ts">--restart unless-stopped</text>
+  <rect x="280" y="510" width="304" height="62" rx="6" class="volume"/>
+  <text x="290" y="530" class="tb">volume cloud-tasks-data</text>
+  <text x="290" y="548" class="ts">montado em /data (DB_PATH=/data/tasks.db)</text>
+  <text x="290" y="563" class="ts">sobrevive à recriação do container</text>
+  <path d="M432,482 L432,508" class="linha"/>
+
+  <!-- Runner -->
+  <rect x="700" y="375" width="215" height="125" rx="6" class="caixa"/>
+  <text x="710" y="394" class="tb">Runner ec2-prod</text>
+  <text x="710" y="412" class="ts">serviço systemd, usuário ubuntu</text>
+  <text x="710" y="428" class="ts">labels: self-hosted, Linux,</text>
+  <text x="710" y="444" class="ts">X64, ec2-prod</text>
+  <text x="710" y="462" class="ts">só conexão de saída (HTTPS):</text>
+  <text x="710" y="478" class="ts">nenhum SSH de entrada para o CD</text>
+
+  <!-- setas AWS -->
+  <!-- 5: runner busca o job no GitHub -->
+  <path d="M850,375 L850,182" class="cinza"/>
+  <circle cx="850" cy="285" r="10" class="num"/><text x="850" y="289" class="numt">5</text>
+  <text x="864" y="252" class="ts">runner busca</text>
+  <text x="864" y="266" class="ts">o job do CD</text>
+  <text x="864" y="280" class="ts">(saída HTTPS)</text>
+
+  <!-- 6: pull da imagem -->
+  <path d="M661,276 L661,330 L520,330 L520,404" class="linha"/>
+  <circle cx="661" cy="318" r="10" class="num"/><text x="661" y="322" class="numt">6</text>
+  <text x="673" y="312" class="ts">docker pull :SHA</text>
+
+  <!-- 6b: runner executa deploy.sh -->
+  <path d="M698,440 L586,440" class="linha"/>
+  <text x="604" y="432" class="ts">deploy.sh</text>
+
+  <!-- 7: clientes -->
+  <path d="M200,392 L278,430" class="linha"/>
+  <circle cx="232" cy="406" r="10" class="num"/><text x="232" y="410" class="numt">7</text>
+
+  <!-- ssh -->
+  <path d="M200,535 L260,535" class="cinza"/>
+
+  <!-- legenda -->
+  <text x="20" y="652" class="ts">Etapas: 1 push da branch e PR, 2 CI do PR, 3 merge na main, 4 imagem :SHA publicada no GHCR,</text>
+  <text x="20" y="667" class="ts">5 runner ec2-prod recebe o job do CD, 6 docker pull e run com o volume, 7 /health e /version por HTTP.</text>
+  <text x="20" y="682" class="ts">Setas azuis: fluxo da entrega. Setas cinzas tracejadas: conexão de saída do runner e acesso de administração.</text>
+</svg>
